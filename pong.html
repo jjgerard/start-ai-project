@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#11131c">
+    <meta name="description" content="Play Pong!ish, a gloriously ridiculous two-player paddle game.">
+    <title>Pong!ish — Ridiculously serious paddle business</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        background: #11131c;
+        color: #fff8ed;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        --cream: #fff8ed;
+        --muted: #a7a7b7;
+        --pink: #ff668a;
+        --cyan: #5de4db;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-width: 280px;
+        min-height: 100svh;
+        margin: 0;
+        padding: max(18px, env(safe-area-inset-top)) 18px max(20px, env(safe-area-inset-bottom));
+        display: flex;
+        justify-content: center;
+        background:
+          radial-gradient(ellipse at 50% -20%, #35304b 0, transparent 55%),
+          #11131c;
+      }
+
+      main {
+        width: min(100%, 860px);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .back-link {
+        align-self: flex-start;
+        color: var(--cyan);
+        font-size: .82rem;
+        font-weight: 900;
+        text-decoration: none;
+      }
+
+      .back-link:hover { text-decoration: underline; }
+      .back-link:focus-visible { outline: 2px solid white; outline-offset: 4px; }
+
+      header { text-align: center; }
+
+      .eyebrow {
+        margin: 0 0 3px;
+        color: var(--cyan);
+        font-size: .72rem;
+        font-weight: 900;
+        letter-spacing: .2em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.35rem, 9vw, 4.5rem);
+        font-weight: 1000;
+        letter-spacing: -.075em;
+        line-height: .98;
+        text-shadow: 4px 4px 0 #ff668a;
+      }
+
+      h1 span { color: var(--cyan); }
+
+      .tagline {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: .92rem;
+      }
+
+      .scoreboard {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 12px;
+        padding: 0 4px;
+      }
+
+      .player { display: flex; align-items: center; gap: 9px; }
+      .player.right { justify-content: flex-end; text-align: right; }
+      .player-name { color: var(--muted); font-size: .7rem; font-weight: 900; letter-spacing: .12em; }
+      .score { font-size: clamp(2rem, 8vw, 3rem); font-weight: 1000; line-height: 1; font-variant-numeric: tabular-nums; }
+      .player.left .score { color: var(--cyan); }
+      .player.right .score { color: var(--pink); }
+      .versus { color: #6b6d7b; font-size: .72rem; font-weight: 900; letter-spacing: .1em; }
+
+      .arena {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+        border: 2px solid #464658;
+        border-radius: 18px;
+        background: #191b29;
+        box-shadow: 0 14px 44px #0006, inset 0 0 48px #06070b55;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      canvas { display: block; width: 100%; height: 100%; }
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 10px;
+        padding: 20px;
+        background: #11131c99;
+        text-align: center;
+        backdrop-filter: blur(3px);
+      }
+
+      .overlay[hidden] { display: none; }
+      .overlay-title { margin: 0; font-size: clamp(1.65rem, 7vw, 2.5rem); font-weight: 1000; }
+      .overlay-copy { max-width: 27ch; margin: 0; color: #d0ced9; line-height: 1.45; }
+
+      button {
+        min-height: 46px;
+        border: 0;
+        border-radius: 999px;
+        padding: 0 23px;
+        color: #10121a;
+        background: var(--cyan);
+        font: inherit;
+        font-size: .9rem;
+        font-weight: 1000;
+        cursor: pointer;
+        box-shadow: 0 4px 0 #279d99;
+        touch-action: manipulation;
+      }
+
+      button:active { transform: translateY(2px); box-shadow: 0 2px 0 #279d99; }
+      button:focus-visible { outline: 3px solid white; outline-offset: 4px; }
+
+      .controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .hint { margin: 0; color: var(--muted); font-size: .8rem; line-height: 1.45; }
+      .hint strong { color: var(--cream); }
+      .sound-button {
+        flex: 0 0 auto;
+        min-height: 40px;
+        padding: 0 15px;
+        border: 1px solid #464658;
+        color: var(--cream);
+        background: #222432;
+        box-shadow: none;
+        font-size: .78rem;
+      }
+      .sound-button:active { box-shadow: none; }
+
+      .footer { margin: auto 0 0; color: #777989; text-align: center; font-size: .7rem; }
+
+      @media (max-width: 600px) {
+        body { padding-right: max(13px, env(safe-area-inset-right)); padding-left: max(13px, env(safe-area-inset-left)); }
+        main { gap: 12px; }
+        .arena { aspect-ratio: 1 / 1; border-radius: 15px; }
+        .tagline { font-size: .82rem; }
+        .hint { max-width: 29ch; font-size: .74rem; }
+      }
+
+      @media (min-width: 601px) {
+        .arena { aspect-ratio: 16 / 9; }
+        main { min-height: calc(100svh - 38px); }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="back-link" href="index.html">← All games</a>
+      <header>
+        <p class="eyebrow">The world's okayest sports game</p>
+        <h1>PONG<span>!ish</span></h1>
+        <p class="tagline">Two paddles. One ball. Absolutely no athletic ability required.</p>
+      </header>
+
+      <section class="scoreboard" aria-label="Score">
+        <div class="player left">
+          <span class="score" id="left-score" aria-label="Left player score">0</span>
+          <span class="player-name">LEFT<br>LEGEND</span>
+        </div>
+        <span class="versus">VS.</span>
+        <div class="player right">
+          <span class="player-name">RIGHT<br>ROOKIE</span>
+          <span class="score" id="right-score" aria-label="Right player score">0</span>
+        </div>
+      </section>
+
+      <div class="arena" id="arena" aria-label="Pong game. Drag anywhere on your half to move your paddle.">
+        <canvas id="game" aria-hidden="true"></canvas>
+        <div class="overlay" id="overlay">
+          <p class="overlay-title" id="overlay-title">Ready, wobbly?</p>
+          <p class="overlay-copy" id="overlay-copy">Drag either half to move your paddle. First to 7 wins eternal bragging rights.</p>
+          <button id="start-button" type="button">LET'S BONK</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <p class="hint"><strong>Drag your side</strong> to move. Play solo or grab a buddy.<br>First to 7 wins. Loser supplies snacks.</p>
+        <button class="sound-button" id="sound-button" type="button" aria-pressed="true">🔊 Sound: ON</button>
+      </div>
+
+      <p class="footer">Made for thumbs, questionable reflexes, and dramatic rematches.</p>
+    </main>
+
+    <script>
+      (() => {
+        "use strict";
+
+        const arena = document.querySelector("#arena");
+        const canvas = document.querySelector("#game");
+        const ctx = canvas.getContext("2d");
+        const overlay = document.querySelector("#overlay");
+        const overlayTitle = document.querySelector("#overlay-title");
+        const overlayCopy = document.querySelector("#overlay-copy");
+        const startButton = document.querySelector("#start-button");
+        const soundButton = document.querySelector("#sound-button");
+        const scoreEls = [document.querySelector("#left-score"), document.querySelector("#right-score")];
+
+        const WIN_SCORE = 7;
+        const paddle = { width: 12, height: 78, inset: 22 };
+        const scores = [0, 0];
+        const paddles = [0.5, 0.5];
+        const ball = { x: 0.5, y: 0.5, vx: 0, vy: 0, radius: 8 };
+        const activePointers = new Map();
+        let width = 0;
+        let height = 0;
+        let running = false;
+        let soundOn = true;
+        let audioContext;
+        let lastFrame = 0;
+        let pointPause = 0;
+        let serveToward = Math.random() < 0.5 ? -1 : 1;
+
+        function resize() {
+          const bounds = arena.getBoundingClientRect();
+          const ratio = Math.min(window.devicePixelRatio || 1, 2);
+          width = bounds.width;
+          height = bounds.height;
+          canvas.width = Math.round(width * ratio);
+          canvas.height = Math.round(height * ratio);
+          ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+          paddle.height = Math.max(58, Math.min(90, height * 0.22));
+          paddle.width = Math.max(10, Math.min(15, width * 0.025));
+          paddle.inset = Math.max(16, width * 0.045);
+          ball.radius = Math.max(6, Math.min(9, width * 0.017));
+          draw();
+        }
+
+        function draw() {
+          if (!width || !height) return;
+          ctx.clearRect(0, 0, width, height);
+          ctx.fillStyle = "#191b29";
+          ctx.fillRect(0, 0, width, height);
+
+          ctx.setLineDash([7, 11]);
+          ctx.strokeStyle = "#ffffff22";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(width / 2, 0);
+          ctx.lineTo(width / 2, height);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          drawPaddle(0, "#5de4db");
+          drawPaddle(1, "#ff668a");
+          ctx.save();
+          ctx.shadowColor = "#fff8ed";
+          ctx.shadowBlur = 15;
+          ctx.fillStyle = "#fff8ed";
+          ctx.beginPath();
+          ctx.arc(ball.x * width, ball.y * height, ball.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        function drawPaddle(side, color) {
+          const x = side === 0 ? paddle.inset : width - paddle.inset - paddle.width;
+          const y = paddles[side] * height - paddle.height / 2;
+          ctx.save();
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 15;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.roundRect(x, y, paddle.width, paddle.height, paddle.width / 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        function playTone(frequency, duration, type, endFrequency, volume = 0.08) {
+          if (!soundOn) return;
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          audioContext ||= new AudioContextClass();
+          if (audioContext.state === "suspended") audioContext.resume();
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          const now = audioContext.currentTime;
+          oscillator.type = type;
+          oscillator.frequency.setValueAtTime(frequency, now);
+          oscillator.frequency.exponentialRampToValueAtTime(Math.max(20, endFrequency), now + duration);
+          gain.gain.setValueAtTime(volume, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+          oscillator.connect(gain).connect(audioContext.destination);
+          oscillator.start(now);
+          oscillator.stop(now + duration);
+        }
+
+        function bonk() {
+          playTone(240, 0.11, "square", 105, 0.055);
+          playTone(760, 0.08, "triangle", 390, 0.045);
+        }
+
+        function pointSound() {
+          playTone(370, 0.16, "sawtooth", 95, 0.06);
+          window.setTimeout(() => playTone(180, 0.22, "triangle", 65, 0.05), 90);
+        }
+
+        function setServe() {
+          ball.x = 0.5;
+          ball.y = 0.5;
+          const angle = (Math.random() - 0.5) * 0.8;
+          const speed = Math.min(width * 0.48, 390);
+          ball.vx = Math.cos(angle) * speed * serveToward;
+          ball.vy = Math.sin(angle) * speed;
+        }
+
+        function startGame() {
+          if (!running && scores[0] < WIN_SCORE && scores[1] < WIN_SCORE) {
+            running = true;
+            overlay.hidden = true;
+            lastFrame = performance.now();
+            setServe();
+            requestAnimationFrame(update);
+          } else if (scores[0] >= WIN_SCORE || scores[1] >= WIN_SCORE) {
+            scores[0] = scores[1] = 0;
+            scoreEls.forEach((el) => { el.textContent = "0"; });
+            overlayTitle.textContent = "Ready, wobbly?";
+            overlayCopy.textContent = "Drag either half to move your paddle. First to 7 wins eternal bragging rights.";
+            startButton.textContent = "LET'S BONK";
+            running = true;
+            overlay.hidden = true;
+            lastFrame = performance.now();
+            setServe();
+            requestAnimationFrame(update);
+          }
+        }
+
+        function update(now) {
+          if (!running) return;
+          const dt = Math.min((now - lastFrame) / 1000, 0.035);
+          lastFrame = now;
+
+          if (pointPause > 0) {
+            pointPause -= dt;
+            if (pointPause <= 0) setServe();
+            draw();
+            requestAnimationFrame(update);
+            return;
+          }
+
+          ball.x += ball.vx * dt / width;
+          ball.y += ball.vy * dt / height;
+
+          if (ball.y * height < ball.radius || ball.y * height > height - ball.radius) {
+            ball.vy *= -1;
+            ball.y = Math.max(ball.radius / height, Math.min(1 - ball.radius / height, ball.y));
+            playTone(410, 0.07, "sine", 280, 0.025);
+          }
+
+          for (let side = 0; side < 2; side += 1) {
+            const paddleX = side === 0 ? paddle.inset : width - paddle.inset - paddle.width;
+            const paddleY = paddles[side] * height;
+            const movingTowardPaddle = side === 0 ? ball.vx < 0 : ball.vx > 0;
+            const reachesPaddle = side === 0
+              ? ball.x * width - ball.radius <= paddleX + paddle.width
+              : ball.x * width + ball.radius >= paddleX;
+            if (movingTowardPaddle && reachesPaddle) {
+              if (Math.abs(ball.y * height - paddleY) <= paddle.height / 2 + ball.radius) {
+                const offset = (ball.y * height - paddleY) / (paddle.height / 2);
+                const speed = Math.min(Math.hypot(ball.vx, ball.vy) * 1.055, width * 0.95);
+                const angle = offset * 0.9;
+                ball.vx = Math.cos(angle) * speed * (side === 0 ? 1 : -1);
+                ball.vy = Math.sin(angle) * speed;
+                ball.x = side === 0
+                  ? (paddleX + paddle.width + ball.radius) / width
+                  : (paddleX - ball.radius) / width;
+                bonk();
+              }
+            }
+          }
+
+          if (ball.x < -0.02 || ball.x > 1.02) {
+            const scorer = ball.x < 0 ? 1 : 0;
+            scores[scorer] += 1;
+            scoreEls[scorer].textContent = String(scores[scorer]);
+            serveToward = scorer === 0 ? 1 : -1;
+            pointSound();
+            if (scores[scorer] >= WIN_SCORE) {
+              running = false;
+              overlayTitle.textContent = scorer === 0 ? "LEFT SIDE: LEGEND!" : "RIGHT SIDE: ROOKIE NO MORE!";
+              overlayCopy.textContent = "Victory! Please accept this invisible trophy and an extremely loud rematch.";
+              startButton.textContent = "REMATCH!";
+              overlay.hidden = false;
+            } else {
+              pointPause = 0.65;
+            }
+          }
+
+          draw();
+          if (running) requestAnimationFrame(update);
+        }
+
+        function movePointer(event, side) {
+          const bounds = arena.getBoundingClientRect();
+          const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
+          paddles[side] = y;
+          if (!running) startGame();
+          draw();
+        }
+
+        arena.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          arena.setPointerCapture(event.pointerId);
+          const bounds = arena.getBoundingClientRect();
+          const side = event.clientX < bounds.left + bounds.width / 2 ? 0 : 1;
+          activePointers.set(event.pointerId, side);
+          movePointer(event, side);
+        });
+        arena.addEventListener("pointermove", (event) => {
+          if (!activePointers.has(event.pointerId)) return;
+          event.preventDefault();
+          movePointer(event, activePointers.get(event.pointerId));
+        });
+        function releasePointer(event) { activePointers.delete(event.pointerId); }
+        arena.addEventListener("pointerup", releasePointer);
+        arena.addEventListener("pointercancel", releasePointer);
+        arena.addEventListener("lostpointercapture", releasePointer);
+
+        startButton.addEventListener("click", startGame);
+        soundButton.addEventListener("click", () => {
+          soundOn = !soundOn;
+          soundButton.textContent = soundOn ? "🔊 Sound: ON" : "🔇 Sound: OFF";
+          soundButton.setAttribute("aria-pressed", String(soundOn));
+          if (soundOn) playTone(520, 0.1, "triangle", 780, 0.035);
+        });
+        window.addEventListener("resize", resize);
+        new ResizeObserver(resize).observe(arena);
+        resize();
+      })();
+    </script>
+  </body>
+</html>

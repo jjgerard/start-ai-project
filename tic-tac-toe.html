@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#11131c">
+    <meta name="description" content="Challenge a friend to a quick game of Tic-Tac-Toe.">
+    <title>Tic-Tac-Toe — Little Games Arcade</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        background: #11131c;
+        color: #fff8ed;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        --cream: #fff8ed;
+        --muted: #a7a7b7;
+        --pink: #ff668a;
+        --cyan: #5de4db;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-width: 280px;
+        min-height: 100svh;
+        margin: 0;
+        padding: max(20px, env(safe-area-inset-top)) 18px max(20px, env(safe-area-inset-bottom));
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(ellipse at 50% -20%, #35304b 0, transparent 55%),
+          #11131c;
+      }
+
+      main {
+        width: min(100%, 520px);
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+
+      .back-link {
+        align-self: flex-start;
+        color: var(--cyan);
+        font-size: .82rem;
+        font-weight: 900;
+        text-decoration: none;
+      }
+
+      .back-link:hover { text-decoration: underline; }
+      .back-link:focus-visible { outline: 2px solid white; outline-offset: 4px; }
+      header { text-align: center; }
+
+      .eyebrow {
+        margin: 0 0 5px;
+        color: var(--cyan);
+        font-size: .72rem;
+        font-weight: 900;
+        letter-spacing: .2em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.4rem, 9vw, 4rem);
+        font-weight: 1000;
+        letter-spacing: -.075em;
+        line-height: .98;
+        text-shadow: 3px 3px 0 var(--pink);
+      }
+
+      .tagline { margin: 10px 0 0; color: var(--muted); font-size: .92rem; }
+
+      .status {
+        min-height: 1.5em;
+        margin: 0;
+        color: var(--cream);
+        text-align: center;
+        font-size: 1.05rem;
+        font-weight: 900;
+      }
+
+      .board {
+        width: min(100%, 420px);
+        aspect-ratio: 1;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .cell {
+        min-width: 0;
+        border: 1px solid #464658;
+        border-radius: 15px;
+        background: #222432;
+        color: var(--cream);
+        font: inherit;
+        font-size: clamp(3rem, 16vw, 6rem);
+        font-weight: 1000;
+        line-height: 1;
+        cursor: pointer;
+        box-shadow: 0 5px 0 #0c0d13;
+        touch-action: manipulation;
+      }
+
+      .cell[data-mark="X"] { color: var(--cyan); }
+      .cell[data-mark="O"] { color: var(--pink); }
+      .cell:enabled:hover { background: #2b2e40; }
+      .cell:active { transform: translateY(3px); box-shadow: 0 2px 0 #0c0d13; }
+      .cell:focus-visible, .reset:focus-visible { outline: 3px solid white; outline-offset: 3px; }
+      .cell:disabled { cursor: default; }
+
+      .actions { display: flex; justify-content: center; }
+
+      .reset {
+        min-height: 46px;
+        border: 0;
+        border-radius: 999px;
+        padding: 0 24px;
+        color: #10121a;
+        background: var(--cyan);
+        font: inherit;
+        font-size: .9rem;
+        font-weight: 1000;
+        cursor: pointer;
+        box-shadow: 0 4px 0 #279d99;
+        touch-action: manipulation;
+      }
+
+      .reset:active { transform: translateY(2px); box-shadow: 0 2px 0 #279d99; }
+      .footer { margin: 0; color: #777989; text-align: center; font-size: .75rem; }
+
+      @media (max-width: 600px) {
+        body { padding-right: max(13px, env(safe-area-inset-right)); padding-left: max(13px, env(safe-area-inset-left)); }
+        main { gap: 17px; }
+        .board { gap: 8px; }
+        .cell { border-radius: 12px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { transition-duration: .01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="back-link" href="index.html">← All games</a>
+      <header>
+        <p class="eyebrow">A tiny game of big strategy</p>
+        <h1>TIC-TAC-TOE</h1>
+        <p class="tagline">Two players. Nine squares. One glorious victory.</p>
+      </header>
+
+      <p class="status" id="status" aria-live="polite">X's turn</p>
+      <div class="board" role="group" aria-label="Tic-Tac-Toe board">
+        <button class="cell" type="button" aria-label="Row 1, column 1"></button>
+        <button class="cell" type="button" aria-label="Row 1, column 2"></button>
+        <button class="cell" type="button" aria-label="Row 1, column 3"></button>
+        <button class="cell" type="button" aria-label="Row 2, column 1"></button>
+        <button class="cell" type="button" aria-label="Row 2, column 2"></button>
+        <button class="cell" type="button" aria-label="Row 2, column 3"></button>
+        <button class="cell" type="button" aria-label="Row 3, column 1"></button>
+        <button class="cell" type="button" aria-label="Row 3, column 2"></button>
+        <button class="cell" type="button" aria-label="Row 3, column 3"></button>
+      </div>
+      <div class="actions">
+        <button class="reset" id="reset" type="button">New game</button>
+      </div>
+      <p class="footer">X goes first. Winner gets bragging rights.</p>
+    </main>
+
+    <script>
+      (() => {
+        "use strict";
+
+        const cells = [...document.querySelectorAll(".cell")];
+        const status = document.querySelector("#status");
+        const resetButton = document.querySelector("#reset");
+        const winningLines = [
+          [0, 1, 2], [3, 4, 5], [6, 7, 8],
+          [0, 3, 6], [1, 4, 7], [2, 5, 8],
+          [0, 4, 8], [2, 4, 6]
+        ];
+        let board = Array(9).fill("");
+        let currentPlayer = "X";
+        let gameOver = false;
+
+        function play(index) {
+          if (gameOver || board[index]) return;
+
+          board[index] = currentPlayer;
+          const cell = cells[index];
+          cell.textContent = currentPlayer;
+          cell.dataset.mark = currentPlayer;
+          cell.setAttribute("aria-label", `Row ${Math.floor(index / 3) + 1}, column ${index % 3 + 1}, ${currentPlayer}`);
+          cell.disabled = true;
+
+          const hasWon = winningLines.some((line) => line.every((position) => board[position] === currentPlayer));
+          if (hasWon) {
+            gameOver = true;
+            status.textContent = `${currentPlayer} wins!`;
+            cells.forEach((button) => { button.disabled = true; });
+          } else if (board.every(Boolean)) {
+            gameOver = true;
+            status.textContent = "It's a draw!";
+          } else {
+            currentPlayer = currentPlayer === "X" ? "O" : "X";
+            status.textContent = `${currentPlayer}'s turn`;
+          }
+        }
+
+        function newGame() {
+          board = Array(9).fill("");
+          currentPlayer = "X";
+          gameOver = false;
+          status.textContent = "X's turn";
+          cells.forEach((cell, index) => {
+            cell.textContent = "";
+            cell.disabled = false;
+            delete cell.dataset.mark;
+            cell.setAttribute("aria-label", `Row ${Math.floor(index / 3) + 1}, column ${index % 3 + 1}`);
+          });
+        }
+
+        cells.forEach((cell, index) => cell.addEventListener("click", () => play(index)));
+        resetButton.addEventListener("click", newGame);
+      })();
+    </script>
+  </body>
+</html>

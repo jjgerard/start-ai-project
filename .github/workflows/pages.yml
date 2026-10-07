@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - jjgerard-pong-mobile-game
+      - jjgerard-games-landing-and-tic-tac-toe
   workflow_dispatch:
 
 permissions:
